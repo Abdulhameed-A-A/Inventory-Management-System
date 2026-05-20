@@ -80,13 +80,31 @@ public class InventoryManagementSystem {
                 .collect(Collectors.toList());
     }
 
-    void deleteProduct(int inputId){
-        for(Product product: products){
-            if(product.getProductId() == inputId){
-                products.remove(product);
-                return;
+    boolean deleteProduct(String deleteInput){
+        String[] fields = deleteInput.split("=");
+
+        if(fields.length != 2){
+            return false;
+        }
+
+        String key = fields[0].trim().toLowerCase();
+        String value = fields[1].trim().toLowerCase();
+
+        Predicate<Product> condition;
+
+        switch (key) {
+            case "name" -> condition = product ->
+                    product.getProductName().equalsIgnoreCase(value);
+            case "id" -> {
+                int id = Integer.parseInt(value);
+                condition = product -> product.getProductId() == id;
+            }
+            default -> {
+                return false;
             }
         }
+
+        return products.removeIf(condition);
     }
 
     boolean updateProduct(int productId, String updates) {

@@ -16,7 +16,7 @@ void main() {
             case 1 -> addProduct();
             case 2 -> displayProduct();
             case 3 -> filterProduct();
-//            case 4 -> deleteProduct();
+            case 4 -> deleteProduct();
             case 5 -> updateProduct();
             case 6 -> running = false;
         }
@@ -59,7 +59,11 @@ void filterProduct(){
 }
 
 void deleteProduct(){
-    //Delete Product Ui Logic goes here
+    String deleteInput = validateInput("Enter name/id plus '=' plus value", String.class);
+
+    if(inventoryManagement.deleteProduct(deleteInput)){
+        IO.println("Product Successfully Deleted");
+    }
 }
 
 void updateProduct(){
