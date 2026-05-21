@@ -1,3 +1,4 @@
+import java.nio.MappedByteBuffer;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -22,54 +23,40 @@ public class InventoryManagementSystem {
         this.products = new ArrayList<>();
     }
 
-    boolean addProduct(String inputProduct) {
-        String[] fields = inputProduct.split(":");
+    String addProduct(String inputProduct) {
+        String[] productEntries = inputProduct.split(":");
 
-        for (String field : fields) {
-            String[] innerField = field.split(",");
+        for (String entry : productEntries) {
+            Map<String, String> productData = parseInput(entry, ",");
 
-            String productName = null;
-            double price = 0;
-            int quantity = 0;
-            String category = null;
+            String productName = productData.get("name");
+            String category = productData.get("category");
 
-            for (String inner : innerField) {
-                String[] finalField = inner.split("=");
-
-                if (finalField.length != 2) {
-                    return false;
-                }
-
-                String key = finalField[0].trim().toLowerCase();
-                String value = finalField[1].trim();
-
-                try {
-                    switch (key) {
-                        case "name" -> productName = value;
-                        case "price" -> price = Double.parseDouble(value);
-                        case "quantity" -> quantity = Integer.parseInt(value);
-                        case "category" -> category = value.toUpperCase();
-                        default -> IO.println("Unknown field: " + key);
-                    }
-
-                } catch (NumberFormatException e) {
-                    IO.println("Invalid number format for: " + key);
-                    return false;
-                }
+            if (productName == null || productName.isBlank()) {
+                return "Product name is required";
             }
 
-            if (productName == null || category == null) {
-                IO.println("Missing required fields");
-                return false;
+            if(category == null || category.isBlank()) {
+                return "Category is required";
             }
 
-            Product product = new Product(productId, productName, price, quantity, category);
+            try {
+                double price = Double.parseDouble(productData.getOrDefault("price", "0")
+                );
 
-            productId++;
-            products.add(product);
+                int quantity = Integer.parseInt(productData.getOrDefault("quantity", "0")
+                );
+
+                Product product = new Product(productId, productName, price, quantity, category.toUpperCase());
+
+                products.add(product);
+                productId++;
+            } catch (NumberFormatException e) {
+                return "Price or quantity has invalid number format";
+            }
         }
 
-        return true;
+        return "Product added Successfully";
     }
 
     void displayProduct(){
@@ -87,31 +74,16 @@ public class InventoryManagementSystem {
     }
 
     List<Product> filterProducts(String updates){
-        String[] fields = updates.split("=");
-        if(fields.length != 2){
+        Map<String, String> data = parseInput(updates, ",");
+
+        if(data.isEmpty()){
             return new ArrayList<>();
         }
 
-        String key = fields[0].trim().toLowerCase();
-        String value = fields[1].trim().toLowerCase();
+        String key = data.keySet().iterator().next();
+        String value = data.get(key);
 
-        Predicate<Product> condition;
-
-        switch (key) {
-            case "name" -> condition = product ->
-                    product.getProductName().equalsIgnoreCase(value);
-            case "price" -> {
-                double price = Double.parseDouble(value);
-                condition = product -> product.getPrice() == price;
-            }
-            case "quantity" -> {
-                int quantity = Integer.parseInt(value);
-                condition = product -> product.getQuantity() == quantity;
-            }
-            default -> {
-                return new ArrayList<>();
-            }
-        }
+        Predicate<Product> condition = buildCondition(key, value);
 
         return products.stream()
                 .filter(condition)
@@ -119,37 +91,23 @@ public class InventoryManagementSystem {
     }
 
     boolean deleteProduct(String deleteInput){
-        String[] fields = deleteInput.split("=");
+        Map<String, String> data = parseInput(deleteInput, ",");
 
-        if(fields.length != 2){
+        if(data.isEmpty()){
             return false;
         }
 
-        String key = fields[0].trim().toLowerCase();
-        String value = fields[1].trim().toLowerCase();
+        String key = data.keySet().iterator().next();
+        String value = data.get(key);
 
-        Predicate<Product> condition;
-
-        switch (key) {
-            case "name" -> condition = product ->
-                    product.getProductName().equalsIgnoreCase(value);
-            case "id" -> {
-                int id = Integer.parseInt(value);
-                condition = product -> product.getProductId() == id;
-            }
-            default -> {
-                return false;
-            }
-        }
+        Predicate<Product> condition  = buildCondition(key, value);
 
         return products.removeIf(condition);
     }
 
     boolean updateProduct(int productId, String updates) {
 
-        Optional<Product> foundProduct = products.stream()
-                .filter(p -> p.getProductId() == productId)
-                .findFirst();
+        Optional<Product> foundProduct = findProductById(productId);
 
         if(foundProduct.isEmpty()){
             IO.println("Present Not found");
@@ -158,16 +116,11 @@ public class InventoryManagementSystem {
 
         Product product = foundProduct.get();
 
-        String[] fields = updates.split(",");
+        Map<String, String> updatesmap = parseInput(updates, ",");
 
-        for(String field : fields){
-            String[] keyValue = field.split("=");
-
-            if(keyValue.length != 2){
-                continue;
-            }
-            String key = keyValue[0].trim().toLowerCase();
-            String value = keyValue[1].trim().toLowerCase();
+        for(Map.Entry<String, String> entry : updatesmap.entrySet()){
+            String key = entry.getKey();
+            String value = entry.getValue();
 
             switch (key){
                 case "name" -> product.setProductName(value);
@@ -177,5 +130,54 @@ public class InventoryManagementSystem {
             }
         }
         return true;
+    }
+
+    private Map<String, String> parseInput(String input, String delimiter) {
+        Map<String, String> data = new HashMap<>();
+
+        String[] fields = input.split(delimiter);
+
+        for(String field : fields) {
+            String[] keyValue = field.split("=");
+
+            if(keyValue.length != 2) {
+                continue;
+            }
+
+            String key = keyValue[0].trim().toLowerCase();
+            String value = keyValue[1].trim();
+
+            data.put(key, value);
+        }
+
+        return data;
+    }
+
+    private Optional<Product> findProductById(int id) {
+
+        return products.stream()
+                .filter(p -> p.getProductId() == id)
+                .findFirst();
+    }
+
+    private Predicate<Product> buildCondition(String key, String value) {
+        return switch (key) {
+            case "name" -> product ->
+                                    product.getProductName().equalsIgnoreCase(value);
+            case "price" -> {
+                double price = Double.parseDouble(value);
+                yield product -> Math.abs(product.getPrice() - price) < 0.0001;
+            }
+            case "quantity" -> {
+                int quantity = Integer.parseInt(value);
+                yield product -> product.getQuantity() == quantity;
+            }
+            case "id" -> {
+                int id = Integer.parseInt(value);
+                yield product -> product.getProductId() == id;
+            }
+
+            default -> product -> false;
+        };
     }
 }
