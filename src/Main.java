@@ -14,8 +14,8 @@ void main() {
 
         switch (option){
             case 1 -> addProduct();
-            case 2 -> displayProduct();
-            case 3 -> filterProduct();
+            case 2 -> displayProducts();
+            case 3 -> filterProducts();
             case 4 -> deleteProduct();
             case 5 -> updateProduct();
             case 6 -> running = false;
@@ -32,113 +32,229 @@ void disPlayMainMenu(){
     IO.println("6. Exit");
 }
 
-void addProduct(){
+void addProduct() {
+
     String inputProducts = validateInput(
             """
-            Format -> name=..., price=..., quantity=..., category=...
-            Multiple products should be separated with :
-           \s
-            Example:
-            name=Laptop,price=2500,quantity=4,category=Electronics:
-            name=Chair,price=120,quantity=10,category=Furniture
-           \s
-            Enter product details:\s
-           \s""",
+            ============================================================
+                              ADD NEW PRODUCT
+            ============================================================
+
+            FORMAT:
+              name=...,price=...,quantity=...,category=...
+
+            MULTIPLE PRODUCTS:
+              Separate each product using :
+
+            EXAMPLE:
+              name=Laptop,price=2500,quantity=4,category=Electronics:
+              name=Chair,price=120,quantity=10,category=Furniture
+
+            AVAILABLE CATEGORIES:
+              Electronics, Office, Tools, Cleaning,
+              Furniture, Accessories, Food,
+              Medical, Sporting, Books
+
+            ============================================================
+            Enter product details: \
+            """,
             String.class
     );
 
     String result = inventoryManagement.addProduct(inputProducts);
 
-    IO.println(result);
+    IO.println("\n" + result + "\n");
 }
 
-void displayProduct(){
+void displayProducts() {
+
     List<Product> products = inventoryManagement.getProducts();
 
-    if (products.isEmpty()){
-        IO.println("No products Available");
+    IO.println("""
+            ============================================================
+                              PRODUCT INVENTORY
+            ============================================================
+            """);
+
+    if (products.isEmpty()) {
+        IO.println("No products available.\n");
         return;
     }
 
-    IO.println("=== PRODUCT LIST ===");
+    IO.println("Total Products: " + products.size());
 
-    IO.println("\nFound " + products.size() + " product(s):\n");
+    IO.println("""
+            
+            ------------------------------------------------------------
+            ID | NAME               | PRICE     | QTY | CATEGORY
+            ------------------------------------------------------------
+            """);
+
     for (Product product : products) {
-        IO.println(
-                "ID: " + product.getProductId()
-                        + " | Name: " + product.getProductName()
-                        + " | Price: " + product.getPrice()
-                        + " | Quantity: " + product.getQuantity()
-                        + " | Category: " + product.getCategory()
-        );
+        printProduct(product);
     }
 
-    IO.println("====================");
+    IO.println("------------------------------------------------------------\n");
 }
 
-void filterProduct() {
+void filterProducts() {
+
     String filterInput = validateInput(
             """
-            Example:
-            name=Laptop
-            price=2000
-            quantity=5
-            category=Electronics
-            \s
-            Enter filter (format: key=value): \s
+            ============================================================
+                              FILTER PRODUCTS
+            ============================================================
+
+            AVAILABLE FILTERS:
+              - id
+              - name
+              - price
+              - quantity
+              - category
+
+            FORMAT:
+              key=value
+
+            EXAMPLES:
+              name=Laptop
+              price=2000
+              quantity=5
+              category=Electronics
+              id=1
+
+            ============================================================
+            Enter filter: \
             """,
             String.class
     );
 
-    List<Product> filterResult = inventoryManagement.filterProducts(filterInput);
+    List<Product> filteredProducts = inventoryManagement.filterProducts(filterInput);
 
-    if (filterResult.isEmpty()) {
-        IO.println("No matching products found.");
+    IO.println("""
+            
+            ============================================================
+                              FILTER RESULTS
+            ============================================================
+            """);
+
+    if (filteredProducts.isEmpty()) {
+        IO.println("No matching products found.\n");
         return;
     }
 
-    IO.println("=== FILTER RESULTS ===");
+    IO.println("Matched Products: " + filteredProducts.size());
 
-    filterResult.forEach(product ->
-            IO.println(
-                    "ID: " + product.getProductId()
-                            + " | Name: " + product.getProductName()
-                            + " | Price: " + product.getPrice()
-                            + " | Quantity: " + product.getQuantity()
-                            + " | Category: " + product.getCategory()
-            )
+    IO.println("""
+            
+            ------------------------------------------------------------
+            ID | NAME               | PRICE     | QTY | CATEGORY
+            ------------------------------------------------------------
+            """);
+
+    filteredProducts.forEach(this::printProduct);
+
+    IO.println("------------------------------------------------------------\n");
+}
+
+void deleteProduct() {
+
+    String deleteInput = validateInput(
+            """
+            ============================================================
+                              DELETE PRODUCT
+            ============================================================
+
+            DELETE USING:
+              - id
+              - name
+
+            FORMAT:
+              key=value
+
+            EXAMPLES:
+              id=3
+              name=Laptop
+
+            ============================================================
+            Enter delete command: \
+            """,
+            String.class
     );
 
-    IO.println("======================");
-}
-
-void deleteProduct(){
-    String deleteInput = validateInput("Enter name/id plus '=' plus value", String.class);
-
-    if(inventoryManagement.deleteProduct(deleteInput)){
-        IO.println("Product Successfully Deleted");
+    if (deleteInput == null || deleteInput.isBlank()) {
+        IO.println("Error: Delete input cannot be empty.\n");
+        return;
     }
+
+    String result = inventoryManagement.deleteProduct(deleteInput);
+
+    IO.println("\n" + result + "\n");
 }
 
-void updateProduct(){
-    int inputId = validateInput("Enter the id of the product you wish to Update: ", Integer.class);
-    IO.println("---To Update. Follow The Instruction Below---");
-    IO.println("Name Update: write \"name={name}\"");
-    IO.println("Price Update: write \"price={price}\"");
-    IO.println("Quantity Update: write \"quantity={quantity}\"");
-    IO.println("Note to update all or some. Separate with a comma and replace {name}, {price}, {quantity} with actual values");
-    String inputUpdate = validateInput("Enter update:", String.class);
-    if(inventoryManagement.updateProduct(inputId, inputUpdate)){
-        IO.println("Updated Successfully");
+void updateProduct() {
+
+    IO.println("""
+            ============================================================
+                              UPDATE PRODUCT
+            ============================================================
+            """);
+
+    int productId = validateInput(
+            "Enter Product ID: ",
+            Integer.class
+    );
+
+    String updateInput = validateInput(
+            """
+            
+            AVAILABLE FIELDS:
+              - name
+              - price
+              - quantity
+              - category
+
+            FORMAT:
+              field=value
+
+            MULTIPLE UPDATES:
+              field=value,field=value
+
+            EXAMPLES:
+              name=Laptop
+              price=2500
+              quantity=5
+              category=Electronics
+
+              name=Laptop,price=2500
+              category=Electronics,quantity=10
+
+            ============================================================
+            Enter update details: \
+            """,
+            String.class
+    );
+
+    if (updateInput == null || updateInput.isBlank()) {
+        IO.println("Error: Update details cannot be empty.\n");
+        return;
     }
+
+    String result = inventoryManagement.updateProduct(productId, updateInput);
+
+    IO.println("\n" + result + "\n");
 }
 
-//Reusable's
-void displayCategory() {
-    inventoryManagement.displayCategory();
+
+void printProduct(Product product) {
+    System.out.printf("%-3d| %-20s| %-12.2f| %-5d| %-15s%n",
+            product.getProductId(),
+            product.getProductName(),
+            product.getPrice(),
+            product.getQuantity(),
+            product.getCategory()
+    );
 }
 
-//Utility Methods
 static <T> T validateInput(String message, Class<T> type) {
     String input;
 
@@ -152,11 +268,12 @@ static <T> T validateInput(String message, Class<T> type) {
             } else if (type == Double.class) {
                 return type.cast(Double.parseDouble(input));
             } else if (type == String.class) {
-                if (!input.trim().isEmpty()) {
+                if (!input.isBlank()) {
                     return type.cast(input);
                 }
 
                 IO.println("This field cannot be Empty");
+                continue;
             }
 
             throw new IllegalArgumentException("Unsupported Type");

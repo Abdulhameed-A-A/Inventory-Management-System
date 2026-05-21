@@ -26,10 +26,6 @@ public class InventoryManagementSystem {
         return products;
     }
 
-    Set<String> getCategories() {
-        return categories;
-    }
-
     private Map<String, String> parseInput(String input, String delimiter) {
         Map<String, String> data = new HashMap<>();
 
