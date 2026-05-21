@@ -31,32 +31,55 @@ public class InventoryManagementSystem {
 
             String productName = productData.get("name");
             String category = productData.get("category");
+            String priceInput = productData.get("price");
+            String quantityInput = productData.get("quantity");
 
             if (productName == null || productName.isBlank()) {
-                return "Product name is required";
+                return "Error: Product name is required";
             }
 
-            if(category == null || category.isBlank()) {
-                return "Category is required";
+            if (category == null || category.isBlank()) {
+                return "Error: Category is required";
+            }
+
+            if (!categories.contains(category)) {
+                return "Error: Invalid category -> " + category;
+            }
+
+            double price;
+            int quantity;
+
+            try {
+                if (priceInput == null) {
+                    return "Error: Price is required";
+                }
+                price = Double.parseDouble(priceInput);
+                if (price < 0) {
+                    return "Error: Price cannot be negative";
+                }
+            } catch (NumberFormatException e) {
+                return "Error: Invalid price value -> " + priceInput;
             }
 
             try {
-                double price = Double.parseDouble(productData.getOrDefault("price", "0")
-                );
-
-                int quantity = Integer.parseInt(productData.getOrDefault("quantity", "0")
-                );
-
-                Product product = new Product(productId, productName, price, quantity, category.toUpperCase());
-
-                products.add(product);
-                productId++;
+                if (quantityInput == null) {
+                    return "Error: Quantity is required";
+                }
+                quantity = Integer.parseInt(quantityInput);
+                if (quantity < 0) {
+                    return "Error: Quantity cannot be negative";
+                }
             } catch (NumberFormatException e) {
-                return "Price or quantity has invalid number format";
+                return "Error: Invalid quantity value -> " + quantityInput;
             }
+
+            Product product = new Product(productId, productName, price, quantity, category);
+
+            products.add(product);
+            productId++;
         }
 
-        return "Product added Successfully";
+        return "Product added successfully";
     }
 
     void displayProduct(){
@@ -161,23 +184,41 @@ public class InventoryManagementSystem {
     }
 
     private Predicate<Product> buildCondition(String key, String value) {
-        return switch (key) {
-            case "name" -> product ->
-                                    product.getProductName().equalsIgnoreCase(value);
+
+        return switch (key.toLowerCase()) {
+            case "name" ->
+                    product -> product.getProductName().equalsIgnoreCase(value);
+            case "category" ->
+                    product -> product.getCategory().equalsIgnoreCase(value);
             case "price" -> {
-                double price = Double.parseDouble(value);
+                double price;
+                try {
+                    price = Double.parseDouble(value);
+                } catch (NumberFormatException e) {
+                    yield _ -> false;
+                }
                 yield product -> Math.abs(product.getPrice() - price) < 0.0001;
             }
             case "quantity" -> {
-                int quantity = Integer.parseInt(value);
+                int quantity;
+                try {
+                    quantity = Integer.parseInt(value);
+                } catch (NumberFormatException e) {
+                    yield _ -> false;
+                }
                 yield product -> product.getQuantity() == quantity;
             }
             case "id" -> {
-                int id = Integer.parseInt(value);
+                int id;
+                try {
+                    id = Integer.parseInt(value);
+                } catch (NumberFormatException e) {
+                    yield _ -> false;
+                }
                 yield product -> product.getProductId() == id;
             }
 
-            default -> product -> false;
+            default -> _ -> false;
         };
     }
 }
