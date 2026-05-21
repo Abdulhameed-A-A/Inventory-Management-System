@@ -129,46 +129,89 @@ public class InventoryManagementSystem {
                 .collect(Collectors.toList());
     }
 
-    boolean deleteProduct(String deleteInput){
-        Map<String, String> data = parseInput(deleteInput, ",");
+    String deleteProduct(String input) {
+        Map<String, String> data = parseInput(input, ",");
 
-        if(data.isEmpty()){
-            return false;
+        if (data.isEmpty()) {
+            return "Error: Invalid delete format";
         }
 
         String key = data.keySet().iterator().next();
         String value = data.get(key);
 
-        Predicate<Product> condition  = buildCondition(key, value);
+        Predicate<Product> condition = buildCondition(key, value);
 
-        return products.removeIf(condition);
+        boolean removed = products.removeIf(condition);
+        if (!removed) {
+            return "Error: Product not found";
+        }
+
+        return "Product deleted successfully";
     }
 
-    boolean updateProduct(int productId, String updates) {
-
+    String updateProduct(int productId, String updates) {
         Optional<Product> foundProduct = findProductById(productId);
 
-        if(foundProduct.isEmpty()){
-            IO.println("Present Not found");
-            return false;
+        if (foundProduct.isEmpty()) {
+            return "Error: Product not found";
         }
 
         Product product = foundProduct.get();
 
-        Map<String, String> updatesmap = parseInput(updates, ",");
+        Map<String, String> updateData = parseInput(updates, ",");
 
-        for(Map.Entry<String, String> entry : updatesmap.entrySet()){
+        if (updateData.isEmpty()) {
+            return "Error: Invalid update format";
+        }
+
+        for (Map.Entry<String, String> entry : updateData.entrySet()) {
+
             String key = entry.getKey();
             String value = entry.getValue();
 
-            switch (key){
-                case "name" -> product.setProductName(value);
-                case "price" -> product.setPrice(Double.parseDouble(value));
-                case "quantity" -> product.setQuantity(Integer.parseInt(value));
-                default -> IO.println("Unknown Fields");
+            try {
+                switch (key.toLowerCase()) {
+                    case "name" -> {
+                        if (value.isBlank()) {
+                            return "Error: Product name cannot be empty";
+                        }
+
+                        product.setProductName(value);
+                    }
+                    case "price" -> {
+                        double price = Double.parseDouble(value);
+                        if (price < 0) {
+                            return "Error: Price cannot be negative";
+                        }
+
+                        product.setPrice(price);
+                    }
+                    case "quantity" -> {
+                        int quantity = Integer.parseInt(value);
+                        if (quantity < 0) {
+                            return "Error: Quantity cannot be negative";
+                        }
+
+                        product.setQuantity(quantity);
+                    }
+                    case "category" -> {
+                        if (!categories.contains(value)) {
+                            return "Error: Invalid category -> " + value;
+                        }
+
+                        product.setCategory(value);
+                    }
+
+                    default -> {
+                        return "Error: Unknown field -> " + key;
+                    }
+                }
+            } catch (NumberFormatException e) {
+                return "Error: Invalid value for -> " + key;
             }
         }
-        return true;
+
+        return "Product updated successfully";
     }
 
     private Map<String, String> parseInput(String input, String delimiter) {
