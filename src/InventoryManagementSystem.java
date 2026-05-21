@@ -22,15 +22,53 @@ public class InventoryManagementSystem {
         this.products = new ArrayList<>();
     }
 
+    boolean addProduct(String inputProduct) {
+        String[] fields = inputProduct.split(":");
 
-    boolean addProduct(String productName, double price, int quantity, String category){
-        if(!categories.contains(category)){
-            return false;
+        for (String field : fields) {
+            String[] innerField = field.split(",");
+
+            String productName = null;
+            double price = 0;
+            int quantity = 0;
+            String category = null;
+
+            for (String inner : innerField) {
+                String[] finalField = inner.split("=");
+
+                if (finalField.length != 2) {
+                    return false;
+                }
+
+                String key = finalField[0].trim().toLowerCase();
+                String value = finalField[1].trim();
+
+                try {
+                    switch (key) {
+                        case "name" -> productName = value;
+                        case "price" -> price = Double.parseDouble(value);
+                        case "quantity" -> quantity = Integer.parseInt(value);
+                        case "category" -> category = value.toUpperCase();
+                        default -> IO.println("Unknown field: " + key);
+                    }
+
+                } catch (NumberFormatException e) {
+                    IO.println("Invalid number format for: " + key);
+                    return false;
+                }
+            }
+
+            if (productName == null || category == null) {
+                IO.println("Missing required fields");
+                return false;
+            }
+
+            Product product = new Product(productId, productName, price, quantity, category);
+
+            productId++;
+            products.add(product);
         }
 
-        Product product = new Product(productId, productName, price, quantity, category);
-        productId ++;
-        products.add(product);
         return true;
     }
 

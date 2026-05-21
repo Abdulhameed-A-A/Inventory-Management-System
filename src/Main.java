@@ -33,16 +33,11 @@ void disPlayMainMenu(){
 }
 
 void addProduct(){
-    String inputName = validateInput("Enter product name: ", String.class);
-    double inputPrice = validateInput("Enter the price of the product: ", Double.class);
-    int inputQuantity = validateInput("Enter the Quantity of the Product: ", Integer.class);
-    displayCategory();
-    String inputCategory = validateInput("Enter the category for the product: ", String.class);
+    String inputProducts = validateInput("Enter Details: ", String.class);
 
-    if(inventoryManagement.addProduct(inputName, inputPrice, inputQuantity, inputCategory)){
+    if(inventoryManagement.addProduct(inputProducts)){
         IO.println("Product added Successfully");
     }
-
 }
 
 void displayProduct(){
