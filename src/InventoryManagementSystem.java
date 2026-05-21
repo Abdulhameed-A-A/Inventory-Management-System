@@ -1,4 +1,3 @@
-import java.nio.MappedByteBuffer;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -21,6 +20,81 @@ public class InventoryManagementSystem {
 
     InventoryManagementSystem(){
         this.products = new ArrayList<>();
+    }
+
+    List<Product> getProducts() {
+        return products;
+    }
+
+    Set<String> getCategories() {
+        return categories;
+    }
+
+    private Map<String, String> parseInput(String input, String delimiter) {
+        Map<String, String> data = new HashMap<>();
+
+        String[] fields = input.split(delimiter);
+
+        for(String field : fields) {
+            String[] keyValue = field.split("=");
+
+            if(keyValue.length != 2) {
+                continue;
+            }
+
+            String key = keyValue[0].trim().toLowerCase();
+            String value = keyValue[1].trim();
+
+            data.put(key, value);
+        }
+
+        return data;
+    }
+
+    private Optional<Product> findProductById(int id) {
+
+        return products.stream()
+                .filter(p -> p.getProductId() == id)
+                .findFirst();
+    }
+
+    private Predicate<Product> buildCondition(String key, String value) {
+
+        return switch (key.toLowerCase()) {
+            case "name" ->
+                    product -> product.getProductName().equalsIgnoreCase(value);
+            case "category" ->
+                    product -> product.getCategory().equalsIgnoreCase(value);
+            case "price" -> {
+                double price;
+                try {
+                    price = Double.parseDouble(value);
+                } catch (NumberFormatException e) {
+                    yield _ -> false;
+                }
+                yield product -> Math.abs(product.getPrice() - price) < 0.0001;
+            }
+            case "quantity" -> {
+                int quantity;
+                try {
+                    quantity = Integer.parseInt(value);
+                } catch (NumberFormatException e) {
+                    yield _ -> false;
+                }
+                yield product -> product.getQuantity() == quantity;
+            }
+            case "id" -> {
+                int id;
+                try {
+                    id = Integer.parseInt(value);
+                } catch (NumberFormatException e) {
+                    yield _ -> false;
+                }
+                yield product -> product.getProductId() == id;
+            }
+
+            default -> _ -> false;
+        };
     }
 
     String addProduct(String inputProduct) {
@@ -80,36 +154,6 @@ public class InventoryManagementSystem {
         }
 
         return "Product added successfully";
-    }
-
-    String displayProduct() {
-        if (products.isEmpty()) {
-            return "No products available";
-        }
-        for (Product product : products) {
-            IO.println(
-                    product.getProductId()
-                            + ". | Name: " + product.getProductName()
-                            + " | Price: " + product.getPrice()
-                            + " | Quantity: " + product.getQuantity()
-                            + " | Category: " + product.getCategory()
-            );
-        }
-
-        return "Products displayed successfully";
-    }
-
-    String displayCategory() {
-        if (categories.isEmpty()) {
-            return "No categories available";
-        }
-        IO.println("Categories:");
-
-        for (String category : categories) {
-            IO.println("- " + category);
-        }
-
-        return "Categories displayed successfully";
     }
 
     List<Product> filterProducts(String updates){
@@ -212,72 +256,5 @@ public class InventoryManagementSystem {
         }
 
         return "Product updated successfully";
-    }
-
-    private Map<String, String> parseInput(String input, String delimiter) {
-        Map<String, String> data = new HashMap<>();
-
-        String[] fields = input.split(delimiter);
-
-        for(String field : fields) {
-            String[] keyValue = field.split("=");
-
-            if(keyValue.length != 2) {
-                continue;
-            }
-
-            String key = keyValue[0].trim().toLowerCase();
-            String value = keyValue[1].trim();
-
-            data.put(key, value);
-        }
-
-        return data;
-    }
-
-    private Optional<Product> findProductById(int id) {
-
-        return products.stream()
-                .filter(p -> p.getProductId() == id)
-                .findFirst();
-    }
-
-    private Predicate<Product> buildCondition(String key, String value) {
-
-        return switch (key.toLowerCase()) {
-            case "name" ->
-                    product -> product.getProductName().equalsIgnoreCase(value);
-            case "category" ->
-                    product -> product.getCategory().equalsIgnoreCase(value);
-            case "price" -> {
-                double price;
-                try {
-                    price = Double.parseDouble(value);
-                } catch (NumberFormatException e) {
-                    yield _ -> false;
-                }
-                yield product -> Math.abs(product.getPrice() - price) < 0.0001;
-            }
-            case "quantity" -> {
-                int quantity;
-                try {
-                    quantity = Integer.parseInt(value);
-                } catch (NumberFormatException e) {
-                    yield _ -> false;
-                }
-                yield product -> product.getQuantity() == quantity;
-            }
-            case "id" -> {
-                int id;
-                try {
-                    id = Integer.parseInt(value);
-                } catch (NumberFormatException e) {
-                    yield _ -> false;
-                }
-                yield product -> product.getProductId() == id;
-            }
-
-            default -> _ -> false;
-        };
     }
 }

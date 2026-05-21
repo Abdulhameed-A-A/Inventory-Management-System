@@ -33,24 +33,83 @@ void disPlayMainMenu(){
 }
 
 void addProduct(){
-    String inputProducts = validateInput("Enter Details: ", String.class);
+    String inputProducts = validateInput(
+            """
+            Format -> name=..., price=..., quantity=..., category=...
+            Multiple products should be separated with :
+           \s
+            Example:
+            name=Laptop,price=2500,quantity=4,category=Electronics:
+            name=Chair,price=120,quantity=10,category=Furniture
+           \s
+            Enter product details:\s
+           \s""",
+            String.class
+    );
 
-    if(inventoryManagement.addProduct(inputProducts)){
-        IO.println("Product added Successfully");
-    }
+    String result = inventoryManagement.addProduct(inputProducts);
+
+    IO.println(result);
 }
 
 void displayProduct(){
-    inventoryManagement.displayProduct();
+    List<Product> products = inventoryManagement.getProducts();
+
+    if (products.isEmpty()){
+        IO.println("No products Available");
+        return;
+    }
+
+    IO.println("=== PRODUCT LIST ===");
+
+    IO.println("\nFound " + products.size() + " product(s):\n");
+    for (Product product : products) {
+        IO.println(
+                "ID: " + product.getProductId()
+                        + " | Name: " + product.getProductName()
+                        + " | Price: " + product.getPrice()
+                        + " | Quantity: " + product.getQuantity()
+                        + " | Category: " + product.getCategory()
+        );
+    }
+
+    IO.println("====================");
 }
 
-void filterProduct(){
-        String filterInput = validateInput("Enter method to which you want to search with an '=' and the value", String.class);
+void filterProduct() {
+    String filterInput = validateInput(
+            """
+            Example:
+            name=Laptop
+            price=2000
+            quantity=5
+            category=Electronics
+            \s
+            Enter filter (format: key=value): \s
+            """,
+            String.class
+    );
 
-        List<Product> filterResult = inventoryManagement.filterProducts(filterInput);
+    List<Product> filterResult = inventoryManagement.filterProducts(filterInput);
 
-        filterResult.forEach(product -> IO.println(product.getProductId() + ". | Name: " + product.getProductName() + " | Price: " + product.getPrice() + " | Category: " + product.getCategory()));
+    if (filterResult.isEmpty()) {
+        IO.println("No matching products found.");
+        return;
+    }
 
+    IO.println("=== FILTER RESULTS ===");
+
+    filterResult.forEach(product ->
+            IO.println(
+                    "ID: " + product.getProductId()
+                            + " | Name: " + product.getProductName()
+                            + " | Price: " + product.getPrice()
+                            + " | Quantity: " + product.getQuantity()
+                            + " | Category: " + product.getCategory()
+            )
+    );
+
+    IO.println("======================");
 }
 
 void deleteProduct(){
