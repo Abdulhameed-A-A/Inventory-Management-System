@@ -82,18 +82,34 @@ public class InventoryManagementSystem {
         return "Product added successfully";
     }
 
-    void displayProduct(){
-        for(Product product: products){
-            IO.println(product.getProductId() + ". | Name: " + product.getProductName() + " | Price: " + product.getPrice() + " | Category: " + product.getCategory());
+    String displayProduct() {
+        if (products.isEmpty()) {
+            return "No products available";
         }
+        for (Product product : products) {
+            IO.println(
+                    product.getProductId()
+                            + ". | Name: " + product.getProductName()
+                            + " | Price: " + product.getPrice()
+                            + " | Quantity: " + product.getQuantity()
+                            + " | Category: " + product.getCategory()
+            );
+        }
+
+        return "Products displayed successfully";
     }
 
-    void displayCategory(){
-        IO.print("Categories:\n- ");
-        for(String category: categories){
-            IO.print(category + " , ");
+    String displayCategory() {
+        if (categories.isEmpty()) {
+            return "No categories available";
         }
-        IO.print("-\n");
+        IO.println("Categories:");
+
+        for (String category : categories) {
+            IO.println("- " + category);
+        }
+
+        return "Categories displayed successfully";
     }
 
     List<Product> filterProducts(String updates){
