@@ -2,7 +2,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class InventoryManagementSystem {
+public class InventoryManagementService {
     private final ArrayList<Product> products;
     private int productId = 1;
     private final Set<String> categories = Set.of(
@@ -18,7 +18,7 @@ public class InventoryManagementSystem {
             "Books"
     );
 
-    InventoryManagementSystem(){
+    InventoryManagementService(){
         this.products = new ArrayList<>();
     }
 
@@ -46,12 +46,33 @@ public class InventoryManagementSystem {
 
         return data;
     }
+    private record UpdateContext(Product product, Map<String, String> updates) {}
+
+    private Optional<UpdateContext> buildUpdateContext(int productId, String updates) {
+
+        Optional<Product> foundProduct = findProductById(productId);
+        if (foundProduct.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Map<String, String> updateData = parseInput(updates, ",");
+        if (updateData.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new UpdateContext(foundProduct.get(), updateData));
+    }
 
     private Optional<Product> findProductById(int id) {
 
         return products.stream()
                 .filter(p -> p.getProductId() == id)
                 .findFirst();
+    }
+
+    private Optional<Product> findProduct(String input){
+
+        return filterProducts(input).stream().findFirst();
     }
 
     private Predicate<Product> buildCondition(String key, String value) {
@@ -169,28 +190,9 @@ public class InventoryManagementSystem {
                 .collect(Collectors.toList());
     }
 
-    String deleteProduct(String input) {
-        Map<String, String> data = parseInput(input, ",");
+    String deleteProduct(String deleteInput) {
 
-        if (data.isEmpty()) {
-            return "Error: Invalid delete format";
-        }
-
-        String key = data.keySet().iterator().next();
-        String value = data.get(key);
-
-        Predicate<Product> condition = buildCondition(key, value);
-
-        boolean removed = products.removeIf(condition);
-        if (!removed) {
-            return "Error: Product not found";
-        }
-
-        return "Product deleted successfully";
-    }
-
-    String updateProduct(int productId, String updates) {
-        Optional<Product> foundProduct = findProductById(productId);
+        Optional<Product> foundProduct = findProduct(deleteInput);
 
         if (foundProduct.isEmpty()) {
             return "Error: Product not found";
@@ -198,11 +200,55 @@ public class InventoryManagementSystem {
 
         Product product = foundProduct.get();
 
-        Map<String, String> updateData = parseInput(updates, ",");
+        products.remove(product);
 
-        if (updateData.isEmpty()) {
-            return "Error: Invalid update format";
+        return "Product deleted successfully";
+    }
+
+    String previewDelete(String deleteInput) {
+        Optional<Product> foundProduct = findProduct(deleteInput);
+
+        if(foundProduct.isEmpty()){
+            return "Error: Product now found";
         }
+
+        Product product = foundProduct.get();
+
+        return """
+                ============================================================
+                                      DELETE PREVIEW
+                ============================================================
+                You are about to delete the following product:
+                
+                ID: %d | Name: %s | Price: %.2f | Quantity: %d | Category: %s
+                
+                WARNING: This action cannot be undone!
+                """.formatted(
+                        product.getProductId(),
+                        product.getProductName(),
+                        product.getPrice(),
+                        product.getQuantity(),
+                        product.getCategory());
+    }
+
+    String confirmDelete(String deleteInput, String confirmation){
+        if (!confirmation.equalsIgnoreCase("yes") && !confirmation.equalsIgnoreCase("y")){
+            return "Delete Cancelled";
+        }
+
+        return deleteProduct(deleteInput);
+    }
+
+    String updateProduct(int productId, String updates) {
+        Optional<UpdateContext> contextOpt = buildUpdateContext(productId, updates);
+
+        if(contextOpt.isEmpty()){
+            return "Error: Product not found or Invalid update format";
+        }
+
+        UpdateContext context = contextOpt.get();
+        Product product = context.product;
+        Map<String, String> updateData = context.updates;
 
         for (Map.Entry<String, String> entry : updateData.entrySet()) {
 
@@ -215,7 +261,6 @@ public class InventoryManagementSystem {
                         if (value.isBlank()) {
                             return "Error: Product name cannot be empty";
                         }
-
                         product.setProductName(value);
                     }
                     case "price" -> {
@@ -223,7 +268,6 @@ public class InventoryManagementSystem {
                         if (price < 0) {
                             return "Error: Price cannot be negative";
                         }
-
                         product.setPrice(price);
                     }
                     case "quantity" -> {
@@ -231,14 +275,12 @@ public class InventoryManagementSystem {
                         if (quantity < 0) {
                             return "Error: Quantity cannot be negative";
                         }
-
                         product.setQuantity(quantity);
                     }
                     case "category" -> {
                         if (!categories.contains(value)) {
                             return "Error: Invalid category -> " + value;
                         }
-
                         product.setCategory(value);
                     }
 
@@ -252,5 +294,72 @@ public class InventoryManagementSystem {
         }
 
         return "Product updated successfully";
+    }
+
+    String previewUpdate(int productId, String updates) {
+        Optional<UpdateContext> contextOpt = buildUpdateContext(productId, updates);
+
+        if(contextOpt.isEmpty()){
+            return "Error: Product not found or invalid update format";
+        }
+
+        UpdateContext context = contextOpt.get();
+        Product product = context.product();
+        Map<String, String> updateData = context.updates();
+
+        StringBuilder preview = new StringBuilder();
+
+        preview.append("""
+        ============================================================
+                        UPDATE PREVIEW
+        ============================================================
+        """);
+
+        for (Map.Entry<String, String> entry : updateData.entrySet()) {
+
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            switch (key.toLowerCase()) {
+                case "name" -> preview.append("""
+                    Name:
+                      Old -> %s
+                      New -> %s
+                    """.formatted(product.getProductName(), value));
+
+                case "price" -> preview.append("""
+                    Price:
+                      Old -> %.2f
+                      New -> %s
+                    """.formatted(product.getPrice(), value));
+
+                case "quantity" -> preview.append("""
+                    Quantity:
+                      Old -> %d
+                      New -> %s
+                    """.formatted(product.getQuantity(), value));
+
+                case "category" -> preview.append("""
+                    Category:
+                      Old -> %s
+                      New -> %s
+                    """.formatted(product.getCategory(), value));
+
+                default -> {
+                    return "Error: Unknown Field -> " + key;
+                }
+            }
+        }
+
+        return preview.toString();
+    }
+
+    String confirmUpdate(int productId, String updates, String confirmation) {
+        if (!confirmation.equalsIgnoreCase("yes") && !confirmation.equalsIgnoreCase("y")) {
+
+            return "Update Cancelled";
+        }
+
+        return updateProduct(productId, updates);
     }
 }

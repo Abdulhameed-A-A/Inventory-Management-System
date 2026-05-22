@@ -1,35 +1,55 @@
 static Scanner scanner = new Scanner(System.in);
-static InventoryManagementSystem inventoryManagement = new InventoryManagementSystem();
+static InventoryManagementService inventoryManagementService = new InventoryManagementService();
 
 void main() {
+    printHeader();
+    runMenu();
+}
 
-    IO.println("*--------------------------*");
-    IO.println("Inventory Management System");
-    IO.println("*--------------------------*");
+void printHeader(){
+    IO.println("""
+        ==========================================================
+                    INVENTORY MANAGEMENT SYSTEM
+        ==========================================================
+        """);
+}
+
+void displayMainMenu() {
+    IO.println("""
+         1) Add Product
+         2) Display Products
+         3) Filter Products
+
+         4) Delete Product
+         5) Update Product
+
+         6) Exit
+
+        ==========================================================
+        """);
+}
+
+void runMenu(){
     boolean running = true;
-
     while (running) {
-        disPlayMainMenu();
-        int option = validateInput("Enter your Option (1 - 6) : ", Integer.class);
-
-        switch (option){
-            case 1 -> addProduct();
+        displayMainMenu();
+        int option = validateInput("Enter your option (1 - 6): ", Integer.class);
+        switch (option) {
+            case 1 -> {
+                addProduct();
+                IO.println("Product added successfully\n");
+            }
             case 2 -> displayProducts();
             case 3 -> filterProducts();
             case 4 -> deleteProduct();
             case 5 -> updateProduct();
-            case 6 -> running = false;
+            case 6 -> {
+                IO.println("Exiting system... Goodbye!");
+                running = false;
+            }
+            default -> IO.println("Invalid option. Please choose between 1 - 6.\n");
         }
     }
-}
-
-void disPlayMainMenu(){
-    IO.println("1. Add Product");
-    IO.println("2. Display Products");
-    IO.println("3. Filter Products");
-    IO.println("4. Delete Product");
-    IO.println("5. Update Product");
-    IO.println("6. Exit");
 }
 
 void addProduct() {
@@ -61,14 +81,14 @@ void addProduct() {
             String.class
     );
 
-    String result = inventoryManagement.addProduct(inputProducts);
+    String result = inventoryManagementService.addProduct(inputProducts);
 
     IO.println("\n" + result + "\n");
 }
 
 void displayProducts() {
 
-    List<Product> products = inventoryManagement.getProducts();
+    List<Product> products = inventoryManagementService.getProducts();
 
     IO.println("""
             ============================================================
@@ -128,7 +148,7 @@ void filterProducts() {
             String.class
     );
 
-    List<Product> filteredProducts = inventoryManagement.filterProducts(filterInput);
+    List<Product> filteredProducts = inventoryManagementService.filterProducts(filterInput);
 
     IO.println("""
             
@@ -158,12 +178,14 @@ void filterProducts() {
 
 void deleteProduct() {
 
-    String deleteInput = validateInput(
-            """
+    IO.println("""
             ============================================================
                               DELETE PRODUCT
             ============================================================
+            """);
 
+    String deleteInput = validateInput(
+            """
             DELETE USING:
               - id
               - name
@@ -181,12 +203,17 @@ void deleteProduct() {
             String.class
     );
 
-    if (deleteInput == null || deleteInput.isBlank()) {
-        IO.println("Error: Delete input cannot be empty.\n");
+    String preview = inventoryManagementService.previewDelete(deleteInput);
+
+    IO.println("\n" + preview);
+
+    if (preview.startsWith("Error")) {
         return;
     }
 
-    String result = inventoryManagement.deleteProduct(deleteInput);
+    String confirmation = validateInput("\nProceed with delete? (yes/no): ", String.class);
+
+    String result = inventoryManagementService.confirmDelete(deleteInput, confirmation);
 
     IO.println("\n" + result + "\n");
 }
@@ -199,14 +226,11 @@ void updateProduct() {
             ============================================================
             """);
 
-    int productId = validateInput(
-            "Enter Product ID: ",
-            Integer.class
-    );
+    int productId = validateInput("Enter Product ID: ", Integer.class);
 
     String updateInput = validateInput(
             """
-            
+
             AVAILABLE FIELDS:
               - name
               - price
@@ -219,27 +243,23 @@ void updateProduct() {
             MULTIPLE UPDATES:
               field=value,field=value
 
-            EXAMPLES:
-              name=Laptop
-              price=2500
-              quantity=5
-              category=Electronics
-
-              name=Laptop,price=2500
-              category=Electronics,quantity=10
-
             ============================================================
             Enter update details: \
             """,
             String.class
     );
 
-    if (updateInput == null || updateInput.isBlank()) {
-        IO.println("Error: Update details cannot be empty.\n");
+    String preview = inventoryManagementService.previewUpdate(productId, updateInput);
+
+    IO.println("\n" + preview);
+
+    if (preview.startsWith("Error")) {
         return;
     }
 
-    String result = inventoryManagement.updateProduct(productId, updateInput);
+    String confirmation = validateInput("\nProceed with update? (yes/no): ", String.class);
+
+    String result = inventoryManagementService.confirmUpdate(productId, updateInput, confirmation);
 
     IO.println("\n" + result + "\n");
 }
