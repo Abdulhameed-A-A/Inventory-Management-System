@@ -3,7 +3,7 @@ public class Product {
     private String productName;
     private double price;
     private int quantity;
-    String category;
+    private String category;
 
     Product (int productId, String productName, double price, int quantity, String category) {
         this.productId = productId;

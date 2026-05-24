@@ -1,3 +1,4 @@
+import java.io.*;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -6,6 +7,8 @@ public class InventoryManagementService {
     private final ArrayList<Product> products;
     private int productId = 1;
     private final int LOW_STOCK_THRESHOLD = 5;
+    private boolean loaded = false;
+    private final String PRODUCTS_FILE_PATH = "products.txt";
     private final Set<String> categories = Set.of(
             "Electronics",
             "Office",
@@ -23,7 +26,7 @@ public class InventoryManagementService {
         this.products = new ArrayList<>();
     }
 
-    List<Product> getProducts() {
+    List<Product> getProducts(){
         return products;
     }
 
@@ -69,11 +72,6 @@ public class InventoryManagementService {
         return products.stream()
                 .filter(p -> p.getProductId() == id)
                 .findFirst();
-    }
-
-    private Optional<Product> findProduct(String input){
-
-        return filterProducts(input).stream().findFirst();
     }
 
     private Predicate<Product> buildCondition(String key, String value) {
@@ -407,5 +405,101 @@ public class InventoryManagementService {
         return products.stream()
                 .filter(p -> p.getQuantity() < LOW_STOCK_THRESHOLD)
                 .collect(Collectors.toList());
+    }
+
+    String saveProductsToFile() {
+        try {
+            FileWriter writer = new FileWriter(PRODUCTS_FILE_PATH);
+
+            for(Product product: products) {
+                String line = product.getProductId() +
+                        "," + product.getProductName() +
+                        "," + product.getPrice() +
+                        "," + product.getQuantity() +
+                        "," + product.getCategory();
+
+                writer.write(line + "\n");
+            }
+            writer.close();
+            return "Products successfully saved to File";
+        } catch (IOException e){
+            return "Error: Something Went Wrong";
+        }
+    }
+
+    String loadProductsFromFile(){
+        if(loaded){
+            return "Info: Already Loaded from file";
+        }
+
+        StringBuilder errors = new StringBuilder();
+        int lineNumber = 0;
+
+        Set<Integer> seenIds = new HashSet<>();
+
+        for (Product p : products){
+            seenIds.add(p.getProductId());
+        }
+
+        try (BufferedReader reader = new BufferedReader( new FileReader(PRODUCTS_FILE_PATH))){
+            String line;
+
+            while((line = reader.readLine()) != null){
+                lineNumber++;
+
+                String[] parts = line.split(",");
+
+                if(parts.length != 5){
+                    errors.append("Line ")
+                            .append(lineNumber)
+                            .append(": Bad line Structure\n");
+
+                    continue;
+                }
+
+                try {
+                    int id = Integer.parseInt(parts[0].trim());
+                    String name = parts[1].trim();
+                    double price = Double.parseDouble(parts[2].trim());
+                    int quantity = Integer.parseInt(parts[3].trim());
+                    String category = parts[4].trim();
+
+                    if(seenIds.contains(id)){
+                        errors.append("Line ")
+                                .append(lineNumber)
+                                .append(": Duplicate product Ids ")
+                                .append(id)
+                                .append("\n");
+
+                        continue;
+                    }
+
+                    seenIds.add(id);
+
+                    Product product = new Product(id, name, price, quantity, category);
+                    products.add(product);
+
+                    if(id >= productId) {
+                        productId = id + 1;
+                    }
+                } catch (NumberFormatException e) {
+                    errors.append("Line ")
+                            .append(lineNumber)
+                            .append(": Invalid number format \n");
+                }
+            }
+            reader.close();
+
+            loaded = true;
+
+            if(errors.length() > 0){
+                return "Products loaded with errors:\n" + errors;
+            }
+            return "Products Successfully loaded from File";
+        } catch (FileNotFoundException e){
+            return "Error: File not found";
+        } catch (IOException e){
+            return "Error: Something went wrong";
+        }
     }
 }

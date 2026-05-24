@@ -2,6 +2,7 @@ static Scanner scanner = new Scanner(System.in);
 static InventoryManagementService inventoryManagementService = new InventoryManagementService();
 
 void main() {
+    loadProductsFromFile();
     printHeader();
     runMenu();
 }
@@ -22,8 +23,12 @@ void displayMainMenu() {
 
          4) Delete Product
          5) Update Product
+        
+         6) Restock Product
+         7) Purchase Product
+         9) Low Stock
 
-         6) Exit
+         9) Exit
 
         ==========================================================
         """);
@@ -33,7 +38,7 @@ void runMenu(){
     boolean running = true;
     while (running) {
         displayMainMenu();
-        int option = validateInput("Enter your option (1 - 6): ", Integer.class);
+        int option = validateInput("Enter your option (1 - 9): ", Integer.class);
         switch (option) {
             case 1 -> {
                 addProduct();
@@ -43,7 +48,10 @@ void runMenu(){
             case 3 -> filterProducts();
             case 4 -> deleteProduct();
             case 5 -> updateProduct();
-            case 6 -> {
+            case 6 -> restockProduct();
+            case 7 -> purchaseProduct();
+            case 8 -> lowStocks();
+            case 9 -> {
                 IO.println("Exiting system... Goodbye!");
                 running = false;
             }
@@ -84,6 +92,8 @@ void addProduct() {
     String result = inventoryManagementService.addProduct(inputProducts);
 
     IO.println("\n" + result + "\n");
+
+    saveProductsToFile();
 }
 
 void displayProducts() {
@@ -188,14 +198,12 @@ void deleteProduct() {
             """
             DELETE USING:
               - id
-              - name
 
             FORMAT:
               key=value
 
             EXAMPLES:
               id=3
-              name=Laptop
 
             ============================================================
             Enter delete command: \
@@ -216,6 +224,7 @@ void deleteProduct() {
     String result = inventoryManagementService.confirmDelete(deleteInput, confirmation);
 
     IO.println("\n" + result + "\n");
+    saveProductsToFile();
 }
 
 void updateProduct() {
@@ -260,10 +269,79 @@ void updateProduct() {
     String confirmation = validateInput("\nProceed with update? (yes/no): ", String.class);
 
     String result = inventoryManagementService.confirmUpdate(productId, updateInput, confirmation);
-
     IO.println("\n" + result + "\n");
+    saveProductsToFile();
 }
 
+void restockProduct(){
+    IO.println("""
+            ============================================================
+                              RESTOCK PRODUCT
+            ============================================================
+            """);
+
+    int inputId = validateInput("""
+            RESTOCK USING:
+            -id
+            
+            Enter product id:\
+            """, Integer.class);
+    int inputRestockQuantity = validateInput("Enter Restock Quantity: ", Integer.class);
+    String restockResult = inventoryManagementService.restockProduct(inputId, inputRestockQuantity);
+
+    IO.println(restockResult);
+}
+
+void purchaseProduct(){
+    IO.println("""
+            ============================================================
+                              Purchase PRODUCT
+            ============================================================
+            """);
+
+    int inputId = validateInput("Enter Product Id: ", Integer.class);
+    int inputPurchaseQuantity = validateInput("Enter Purchase Quantity: ", Integer.class);
+
+    String purchaseResult = inventoryManagementService.purchaseProduct(inputId, inputPurchaseQuantity);
+    IO.println(purchaseResult);
+}
+
+void lowStocks(){
+    IO.println("""
+            ============================================================
+                              LOW STOCKS
+            ============================================================
+            """);
+
+    List<Product> lowStocksResult = inventoryManagementService.lowStock();
+
+    if(lowStocksResult.isEmpty()){
+        IO.println("No low Stocks");
+    }
+
+    IO.println("Low Stocks: " + lowStocksResult.size());
+
+    IO.println("""
+            
+            ------------------------------------------------------------
+            ID | NAME               | PRICE     | QTY | CATEGORY
+            ------------------------------------------------------------
+            """);
+
+    lowStocksResult.forEach(this::printProduct);
+
+    IO.println("------------------------------------------------------------\n");
+}
+
+void loadProductsFromFile(){
+    String loadResult = inventoryManagementService.loadProductsFromFile();
+    IO.println(loadResult);
+}
+
+void saveProductsToFile(){
+    String saveResult = inventoryManagementService.saveProductsToFile();
+    IO.println(saveResult);
+}
 
 void printProduct(Product product) {
     System.out.printf("%-3d| %-20s| %-12.2f| %-5d| %-15s%n",
