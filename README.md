@@ -1,7 +1,3 @@
-Good — we’ll turn this into something that looks like a real backend portfolio project on GitHub.
-
-You can copy this directly into your `README.md`.
-
 ---
 
 # Inventory Management System (Java)
