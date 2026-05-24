@@ -184,7 +184,7 @@ void deleteProduct() {
             ============================================================
             """);
 
-    String deleteInput = validateInput(
+    int deleteInput = validateInput(
             """
             DELETE USING:
               - id
@@ -200,7 +200,7 @@ void deleteProduct() {
             ============================================================
             Enter delete command: \
             """,
-            String.class
+            Integer.class
     );
 
     String preview = inventoryManagementService.previewDelete(deleteInput);

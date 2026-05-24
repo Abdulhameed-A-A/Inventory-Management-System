@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 public class InventoryManagementService {
     private final ArrayList<Product> products;
     private int productId = 1;
+    private final int LOW_STOCK_THRESHOLD = 5;
     private final Set<String> categories = Set.of(
             "Electronics",
             "Office",
@@ -190,9 +191,9 @@ public class InventoryManagementService {
                 .collect(Collectors.toList());
     }
 
-    String deleteProduct(String deleteInput) {
+    String deleteProduct(int deleteInput) {
 
-        Optional<Product> foundProduct = findProduct(deleteInput);
+        Optional<Product> foundProduct = findProductById(deleteInput);
 
         if (foundProduct.isEmpty()) {
             return "Error: Product not found";
@@ -205,8 +206,8 @@ public class InventoryManagementService {
         return "Product deleted successfully";
     }
 
-    String previewDelete(String deleteInput) {
-        Optional<Product> foundProduct = findProduct(deleteInput);
+    String previewDelete(int deleteInput) {
+        Optional<Product> foundProduct = findProductById(deleteInput);
 
         if(foundProduct.isEmpty()){
             return "Error: Product now found";
@@ -231,7 +232,7 @@ public class InventoryManagementService {
                         product.getCategory());
     }
 
-    String confirmDelete(String deleteInput, String confirmation){
+    String confirmDelete(int deleteInput, String confirmation){
         if (!confirmation.equalsIgnoreCase("yes") && !confirmation.equalsIgnoreCase("y")){
             return "Delete Cancelled";
         }
@@ -361,5 +362,50 @@ public class InventoryManagementService {
         }
 
         return updateProduct(productId, updates);
+    }
+
+    String restockProduct(int productId, int restockValue){
+        Optional<Product> foundProduct = findProductById(productId);
+
+        if(foundProduct.isEmpty()){
+            return "Error: Product not found";
+        }
+
+        Product product = foundProduct.get();
+
+        if(restockValue<= 0 ){
+            return "Error: Restock quantity must be more greater than zero";
+        }
+
+        int newQuantity = product.getQuantity() + restockValue;
+        product.setQuantity(newQuantity);
+        return "Successfully restocked " + product.getProductName() + " by an amount of " + restockValue;
+    }
+
+    String purchaseProduct(int productId, int purchaseQuantity) {
+        Optional<Product> foundProduct = findProductById(productId);
+
+        if(foundProduct.isEmpty()){
+            return "Error: Product not found";
+        }
+
+        Product product = foundProduct.get();
+        int currQuantity = product.getQuantity();
+
+        if(purchaseQuantity <= 0){
+            return "Error: Purchase quantity must be greater than zero";
+        } else if (purchaseQuantity > currQuantity){
+            return "Error: Insufficient stock available";
+        }
+
+        int newQuantity = currQuantity - purchaseQuantity;
+        product.setQuantity(newQuantity);
+        return "Successfully purchased " + purchaseQuantity + " of " + product.getProductName();
+    }
+
+    List<Product> lowStock(){
+        return products.stream()
+                .filter(p -> p.getQuantity() < LOW_STOCK_THRESHOLD)
+                .collect(Collectors.toList());
     }
 }
